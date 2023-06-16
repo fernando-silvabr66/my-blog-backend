@@ -66,7 +66,7 @@ app.post('/api/articles/:name/comments', async (req, res) => {
 
     if (article) {
         //article.comments.push({ postedBy, text });
-        res.status(200).send(article.comments);
+        res.status(200).json(article);
     } else {
         res.status(404).send('Article not found');
     }
