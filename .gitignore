@@ -5,6 +5,9 @@
 /.pnp
 .pnp.js
 
+# mongo data
+./mongo-db-data
+
 # testing
 /coverage
 
@@ -22,5 +25,3 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# mongo data
-./mongo-db-data
