@@ -1,8 +1,12 @@
 import express from 'express';
+import cors from 'cors';
 import { db, connectToDb } from './db.js';
+
+//const cors = require('cors');
 
 const app = new express();
 app.use(express.json());
+app.use(cors());
 
 // app.post('/hello', (req, res) => {
 //     console.log(req.body);
