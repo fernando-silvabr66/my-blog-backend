@@ -60,7 +60,7 @@ app.post('/api/articles/:name/comments', async (req, res) => {
 
     await db.collection('articles').updateOne({ name }, {
         $push: { comments: { postedBy, text } },
-    })
+    });
 
     const article = await db.collection('articles').findOne({ name });
 
@@ -73,7 +73,7 @@ app.post('/api/articles/:name/comments', async (req, res) => {
 });
 
 connectToDb(() => {
-    console.log('Connected to database!');
+    console.log('Successfully connected to database!');
     app.listen(8080, () => {
         console.log('Server is listening on port 8080');
     });
