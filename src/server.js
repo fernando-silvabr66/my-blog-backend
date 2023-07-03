@@ -16,6 +16,19 @@ const app = new express();
 app.use(express.json());
 app.use(cors());
 
+app.use(async (req, res, next) => {
+    const authtoken = req.headers.autorization;
+    if (!authtoken) {
+        try{
+            req.user = await admin.auth().verifyIdToken(authtoken);
+        } catch (e) {
+            res.status(401).send('Invalid token');    
+        }
+    }
+
+    next();
+});
+
 // app.post('/hello', (req, res) => {
 //     console.log(req.body);
 //     res.send(`Hello, ${req.body.name}!`);
@@ -31,10 +44,13 @@ app.get('/api/articles/:name', async (req, res) => {
     //await client.connect();
 
     //const db = client.db('react-blog-db');
+    const { uid } = req.user;
 
     const article = await db.collection('articles').findOne({ name });
 
     if (article) {
+        const upvoteIds = article.upvotesId || [];
+        article.upvoteIds = uid && upvoteIds.includes(uid);
         res.status(200).json(article);
     } else {
         res.status(404).send('Article not found!');
