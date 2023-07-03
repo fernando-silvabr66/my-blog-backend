@@ -1,10 +1,8 @@
 import fs from 'fs';
-inport admin from 'firebase-admin';
+import admin from 'firebase-admin';
 import express from 'express';
 import cors from 'cors';
 import { db, connectToDb } from './db.js';
-
-//const cors = require('cors');
 
 const credentials = JSON.parse(fs.readFileSync('../credentials.json'));
 
@@ -18,7 +16,7 @@ app.use(cors());
 
 app.use(async (req, res, next) => {
     const authtoken = req.headers.autorization;
-    if (!authtoken) {
+    if (authtoken) {
         try{
             req.user = await admin.auth().verifyIdToken(authtoken);
         } catch (e) {
@@ -29,28 +27,15 @@ app.use(async (req, res, next) => {
     next();
 });
 
-// app.post('/hello', (req, res) => {
-//     console.log(req.body);
-//     res.send(`Hello, ${req.body.name}!`);
-// });
-
-
-
 app.get('/api/articles/:name', async (req, res) => {
-    //const name = req.params.name;
     const { name } = req.params;
-    //res.send(`Hello, ${name}!`);
-    //const client = new MongoClient('mongodb://localhost:27017');
-    //await client.connect();
-
-    //const db = client.db('react-blog-db');
     const { uid } = req.user;
 
     const article = await db.collection('articles').findOne({ name });
 
     if (article) {
-        const upvoteIds = article.upvotesId || [];
-        article.upvoteIds = uid && upvoteIds.includes(uid);
+        const upvoteIds = article.upvoteIds || [];
+        article.canUpvote = uid && !upvoteIds.include(uid);
         res.status(200).json(article);
     } else {
         res.status(404).send('Article not found!');
@@ -58,26 +43,42 @@ app.get('/api/articles/:name', async (req, res) => {
 
 });
 
+app.use((req, res, next) => {
+    if (req.user) {
+        next();
+    } else {
+        res.status(401).send('Unauthenticated');
+    }
+});
+
 app.put('/api/articles/:name/upvote', async (req, res) => {
     const { name } = req.params;
-
-    await db.collection('articles').updateOne({ name }, {
-        $inc: { upvotes: 1 },
-    })
+    const { uid } = req.user;
 
     const article = await db.collection('articles').findOne({ name });
 
     if (article) {
-        //article.upvotes += 1;
-        res.status(200).json(article);
+        const upvoteIds = article.upvotesId || [];
+        const canUpvote = uid && !upvoteIds.include(uid);
+
+        if (canUpvote) {
+            await db.collection('articles').updateOne({ name }, {
+                $inc: { upvotes: 1 },
+                $push: { upvoteIds: uid },
+            });
+        }
+
+        const updatedArticle = await db.collection('articles').findOne({ name });
+        res.status(200).json(updatedArticle);
     } else {
-        res.status(404).send('Article not found');
+        res.status(404).send('Article not found!');
     }
 });
 
 app.post('/api/articles/:name/comments', async (req, res) => {
     const { name } = req.params;
-    const { postedBy, text } = req.body;
+    const { text } = req.body;
+    const { email } = req.user;
 
     // const article = articlesInfo.find(article => article.name === name);
     //const client = new MongoClient('mongodb://localhost:27017');
@@ -85,7 +86,7 @@ app.post('/api/articles/:name/comments', async (req, res) => {
     //const db = client.db('react-blog-db');
 
     await db.collection('articles').updateOne({ name }, {
-        $push: { comments: { postedBy, text } },
+        $push: { comments: { postedBy: email, text } },
     });
 
     const article = await db.collection('articles').findOne({ name });
