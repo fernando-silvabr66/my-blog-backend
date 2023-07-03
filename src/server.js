@@ -1,8 +1,16 @@
+import fs from 'fs';
+inport admin from 'firebase-admin';
 import express from 'express';
 import cors from 'cors';
 import { db, connectToDb } from './db.js';
 
 //const cors = require('cors');
+
+const credentials = JSON.parse(fs.readFileSync('../credentials.json'));
+
+admin.initializeApp({
+    credential: admin.credential.cert(credentials),
+});
 
 const app = new express();
 app.use(express.json());
@@ -12,6 +20,8 @@ app.use(cors());
 //     console.log(req.body);
 //     res.send(`Hello, ${req.body.name}!`);
 // });
+
+
 
 app.get('/api/articles/:name', async (req, res) => {
     //const name = req.params.name;
